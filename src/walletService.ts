@@ -1,12 +1,17 @@
-import { Transaction, UserWallet, WalletStorage } from './types';
+import { Transaction, UserWallet, WalletStorage, UserSession, SessionStorage } from './types';
 
+// Core service that handles all wallet operations - this is where the money magic happens
 class WalletService {
-  private wallets: WalletStorage = {};
+  private wallets: WalletStorage = {};    // All user wallets live here
+  private sessions: SessionStorage = {};  // Tracks users in interactive mode
 
+  // Quick and dirty unique ID generator - good enough for our demo
   private generateTransactionId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   }
 
+  // Gets existing wallet or creates a new one with zero balance
+  // This way new users don't need to "sign up" - they just start using it
   private getOrCreateWallet(userId: number): UserWallet {
     if (!this.wallets[userId]) {
       this.wallets[userId] = {
@@ -23,6 +28,7 @@ class WalletService {
     return wallet.balance;
   }
 
+  // Adds money to wallet - returns a result object so the bot knows what to tell the user
   fundWallet(userId: number, amount: number): { success: boolean; newBalance: number; message: string } {
     if (amount <= 0) {
       return {
@@ -43,7 +49,7 @@ class WalletService {
       description: `Wallet funded with $${amount.toFixed(2)}`
     };
 
-    wallet.transactions.unshift(transaction);
+    wallet.transactions.unshift(transaction);  // unshift adds to front, so newest transactions appear first
 
     return {
       success: true,
@@ -52,6 +58,7 @@ class WalletService {
     };
   }
 
+  // Takes money out - checks for sufficient funds first (no overdrafts in this bank!)
   withdrawFromWallet(userId: number, amount: number): { success: boolean; newBalance: number; message: string } {
     if (amount <= 0) {
       return {
@@ -81,7 +88,7 @@ class WalletService {
       description: `Withdrew $${amount.toFixed(2)} from wallet`
     };
 
-    wallet.transactions.unshift(transaction);
+    wallet.transactions.unshift(transaction);  // unshift adds to front, so newest transactions appear first
 
     return {
       success: true,
@@ -90,10 +97,42 @@ class WalletService {
     };
   }
 
+  // Gets recent transactions - defaults to 5 but you can ask for more
   getTransactions(userId: number, limit: number = 5): Transaction[] {
     const wallet = this.getOrCreateWallet(userId);
     return wallet.transactions.slice(0, limit);
   }
+
+  // When user types /fund or /withdraw without amount, we remember what they're trying to do
+  setPendingAction(userId: number, action: 'fund' | 'withdraw'): void {
+    this.sessions[userId] = {
+      userId,
+      pendingAction: action,
+      timestamp: new Date()
+    };
+  }
+
+  // Checks what action user is in the middle of - auto-expires after 5 minutes
+  getPendingAction(userId: number): 'fund' | 'withdraw' | null {
+    const session = this.sessions[userId];
+    if (!session) return null;
+
+    const now = new Date();
+    const sessionAge = (now.getTime() - session.timestamp.getTime()) / 1000 / 60;  // age in minutes
+    
+    // Clean up stale sessions
+    if (sessionAge > 5) {
+      delete this.sessions[userId];
+      return null;
+    }
+
+    return session.pendingAction;
+  }
+
+  clearPendingAction(userId: number): void {
+    delete this.sessions[userId];
+  }
 }
 
+// Export a singleton instance - all parts of the app share the same wallet service
 export default new WalletService();

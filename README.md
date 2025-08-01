@@ -5,8 +5,10 @@ A simple Telegram bot that simulates a basic wallet management experience built 
 ## ✨ Features
 
 - **Balance Management**: Check your current wallet balance
-- **Fund Wallet**: Add money to your wallet (simulated)
-- **Withdraw Funds**: Remove money from your wallet with insufficient funds protection
+- **Fund Wallet**: Add money to your wallet (simulated) - Direct or Interactive mode
+- **Withdraw Funds**: Remove money from your wallet with insufficient funds protection - Direct or Interactive mode
+- **Interactive UI**: User-friendly prompts when amount is not specified in commands
+- **Session Management**: Tracks pending user interactions with 5-minute timeout
 - **Transaction History**: View your last 5 transactions with timestamps
 - **Input Validation**: Comprehensive validation for all user inputs
 - **Error Handling**: Graceful error handling with user-friendly messages
@@ -74,8 +76,8 @@ npm start
 |---------|-------------|---------|
 | `/start` | Welcome message and bot introduction | `/start` |
 | `/balance` | Check your current wallet balance | `/balance` |
-| `/fund <amount>` | Add money to your wallet | `/fund 100` |
-| `/withdraw <amount>` | Withdraw money from your wallet | `/withdraw 50` |
+| `/fund <amount>` or `/fund` | Add money to your wallet (direct or interactive) | `/fund 100` or `/fund` |
+| `/withdraw <amount>` or `/withdraw` | Withdraw money from your wallet (direct or interactive) | `/withdraw 50` or `/withdraw` |
 | `/transactions` | View your last 5 transactions | `/transactions` |
 
 ## 💡 Usage Examples
@@ -94,18 +96,43 @@ Bot: 💰 Your wallet balance is $0.00
 ```
 
 ### Funding Wallet
+
+**Direct Method:**
 ```
 User: /fund 150
 Bot: ✅ Wallet funded with $150.00. New balance: $150.00
 ```
 
+**Interactive Method:**
+```
+User: /fund
+Bot: 💵 How much would you like to fund your wallet?
+
+     Please enter the amount (e.g., 50, 100.50):
+User: 150
+Bot: ✅ Wallet funded with $150.00. New balance: $150.00
+```
+
 ### Withdrawing Funds
+
+**Direct Method:**
 ```
 User: /withdraw 50
 Bot: ✅ Successfully withdrew $50.00. New balance: $100.00
 
 User: /withdraw 200
 Bot: ❌ Insufficient funds
+```
+
+**Interactive Method:**
+```
+User: /withdraw
+Bot: 💸 How much would you like to withdraw?
+
+     Your current balance: $150.00
+     Please enter the amount (e.g., 25, 50.75):
+User: 50
+Bot: ✅ Successfully withdrew $50.00. New balance: $100.00
 ```
 
 ### Viewing Transactions
@@ -140,9 +167,10 @@ assesment/
 
 ## 🛡️ Input Validation & Security
 
-- **Amount Validation**: Only positive numbers are accepted
+- **Amount Validation**: Only positive numbers are accepted (both direct and interactive modes)
 - **Maximum Limits**: Funding is limited to $10,000 per transaction
 - **Insufficient Funds**: Withdrawals are blocked if balance is insufficient
+- **Session Timeout**: Interactive sessions expire after 5 minutes for security
 - **Error Handling**: All errors are caught and user-friendly messages are displayed
 - **User Identification**: Each user's wallet is isolated by Telegram user ID
 
@@ -150,6 +178,7 @@ assesment/
 
 The bot uses **in-memory storage** for simplicity:
 - User wallets are stored in a JavaScript object
+- User sessions are tracked for interactive mode
 - Data persists only while the bot is running
 - Each restart clears all data (perfect for testing/demo)
 
